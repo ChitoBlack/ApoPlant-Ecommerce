@@ -8,7 +8,7 @@ export default function Navbar() {
 
   return (
     <nav className="bg-green-800 text-white p-4 flex justify-between items-center">
-      <Link href="/" className="text-xl font-bold">🌿 Plantas Shop</Link>
+      <Link href="/" className="text-xl font-bold">🌿 ApoPlant</Link>
       <div className="flex gap-6 items-center">
         <Link href="/catalogo">Catálogo</Link>
         <Link href="/carrito" className="relative">

@@ -4,7 +4,7 @@ import Footer from './components/Footer'
 import { CarritoProvider } from './context/CarritoContext'
 
 export const metadata = {
-  title: 'Plantas Shop',
+  title: 'ApoPlant',
   description: 'Tu tienda de plantas online',
 }
 

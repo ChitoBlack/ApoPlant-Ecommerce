@@ -1,7 +1,17 @@
-import { plantas } from '../data/plantas'
+import { supabase } from '../lib/supabase'
 import ProductCard from '../components/ProductCard'
 
-export default function Catalogo() {
+export default async function Catalogo() {
+  const { data: plantas, error } = await supabase
+    .from('plantas')
+    .select('*')
+    .order('created_at', { ascending: true })
+
+  if (error) {
+    console.error(error)
+    return <p>Error cargando plantas</p>
+  }
+
   return (
     <main className="max-w-5xl mx-auto px-6 py-12">
       <h1 className="text-4xl font-bold text-green-900 mb-2">Catálogo</h1>

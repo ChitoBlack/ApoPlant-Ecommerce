@@ -6,18 +6,35 @@ import { useRouter } from 'next/navigation'
 export default function AdminLogin() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
   const router = useRouter()
 
-  const configuredPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD?.trim()
-
-  function handleLogin(e) {
+  async function handleLogin(e) {
     e.preventDefault()
-    if (password === configuredPassword) {
+    setLoading(true)
+    setError('')
+
+    try {
+      const response = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        setError(data.error || 'Contraseña incorrecta')
+        setLoading(false)
+        return
+      }
+
       localStorage.setItem('admin_auth', 'true')
       router.push('/admin')
-    } else {
-      const hint = configuredPassword ? '' : ' No hay una contraseña configurada aún.'
-      setError(`Contraseña incorrecta.${hint}`)
+    } catch (err) {
+      setError('No se pudo validar la contraseña')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -41,9 +58,10 @@ export default function AdminLogin() {
           {error && <p className="text-red-500 text-sm">{error}</p>}
           <button
             type="submit"
-            className="bg-green-700 text-white py-3 rounded-xl font-semibold hover:bg-green-800 transition"
+            disabled={loading}
+            className="bg-green-700 text-white py-3 rounded-xl font-semibold hover:bg-green-800 transition disabled:opacity-50"
           >
-            Entrar
+            {loading ? 'Verificando...' : 'Entrar'}
           </button>
         </form>
       </div>

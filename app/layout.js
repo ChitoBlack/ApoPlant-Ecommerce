@@ -14,6 +14,7 @@ export default function RootLayout({ children }) {
       <body>
         <CarritoProvider>
           <Navbar />
+          
           {children}
           <Footer />
         </CarritoProvider>

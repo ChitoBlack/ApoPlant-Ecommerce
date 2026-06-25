@@ -1,11 +1,30 @@
 'use client'
 
-import { createContext, useContext, useState } from 'react'
+import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 
 const CarritoContext = createContext()
 
 export function CarritoProvider({ children }) {
   const [carrito, setCarrito] = useState([])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    try {
+      const guardado = window.localStorage.getItem('apoplant-carrito')
+      if (guardado) {
+        setCarrito(JSON.parse(guardado))
+      }
+    } catch {
+      setCarrito([])
+    }
+  }, [])
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('apoplant-carrito', JSON.stringify(carrito))
+    }
+  }, [carrito])
 
   function agregarAlCarrito(planta) {
     setCarrito((prev) => {
@@ -32,8 +51,14 @@ export function CarritoProvider({ children }) {
     )
   }
 
-  const total = carrito.reduce((acc, item) => acc + item.precio * item.cantidad, 0)
-  const totalItems = carrito.reduce((acc, item) => acc + item.cantidad, 0)
+  const total = useMemo(
+    () => carrito.reduce((acc, item) => acc + item.precio * item.cantidad, 0),
+    [carrito]
+  )
+  const totalItems = useMemo(
+    () => carrito.reduce((acc, item) => acc + item.cantidad, 0),
+    [carrito]
+  )
 
   return (
     <CarritoContext.Provider value={{

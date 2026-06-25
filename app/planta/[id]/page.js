@@ -1,18 +1,13 @@
-import { supabase } from '../../lib/supabase'
+import { getPlantaById } from '../../lib/supabase'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import BotonCarrito from '../../components/BotonCarrito'
 
 export default async function DetallePlanta({ params }) {
   const { id } = await params
+  const planta = await getPlantaById(id)
 
-  const { data: planta, error } = await supabase
-    .from('plantas')
-    .select('*')
-    .eq('id', id)
-    .single()
-
-  if (error || !planta) return notFound()
+  if (!planta) return notFound()
 
   return (
     <main className="max-w-4xl mx-auto px-6 py-12">

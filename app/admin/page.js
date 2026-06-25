@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../lib/supabase'
+import { plantas as datosPlantas } from '../data/plantas'
 import Link from 'next/link'
 
 export default function Admin() {
@@ -19,15 +20,36 @@ export default function Admin() {
   }, [])
 
   async function cargarPlantas() {
-    const { data } = await supabase.from('plantas').select('*').order('created_at')
-    setPlantas(data || [])
+    if (supabase) {
+      const { data } = await supabase.from('plantas').select('*').order('created_at')
+      setPlantas(data || [])
+      setLoading(false)
+      return
+    }
+
+    setPlantas(datosPlantas)
     setLoading(false)
   }
 
   async function eliminarPlanta(id) {
     if (!confirm('¿Seguro que quieres eliminar esta planta?')) return
-    await supabase.from('plantas').delete().eq('id', id)
-    cargarPlantas()
+
+    try {
+      const response = await fetch(`/api/plantas/${id}`, {
+        method: 'DELETE',
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        alert(data.error || 'No se pudo eliminar la planta')
+        return
+      }
+
+      await cargarPlantas()
+    } catch (error) {
+      alert('No se pudo eliminar la planta: ' + error.message)
+    }
   }
 
   function cerrarSesion() {
@@ -74,12 +96,20 @@ export default function Admin() {
               <p className="text-sm text-gray-500">{planta.categoria} · Stock: {planta.stock}</p>
             </div>
             <p className="font-bold text-green-800">${planta.precio.toLocaleString('es-CL')}</p>
-            <button
-              onClick={() => eliminarPlanta(planta.id)}
-              className="text-red-400 hover:text-red-600 transition text-sm border border-red-200 px-3 py-1 rounded-full"
-            >
-              Eliminar
-            </button>
+            <div className="flex gap-2">
+              <Link
+                href={`/admin/editar-planta/${planta.id}`}
+                className="text-green-700 hover:text-green-900 transition text-sm border border-green-200 px-3 py-1 rounded-full"
+              >
+                Editar
+              </Link>
+              <button
+                onClick={() => eliminarPlanta(planta.id)}
+                className="text-red-400 hover:text-red-600 transition text-sm border border-red-200 px-3 py-1 rounded-full"
+              >
+                Eliminar
+              </button>
+            </div>
           </div>
         ))}
       </div>

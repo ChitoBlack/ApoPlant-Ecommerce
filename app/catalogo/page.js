@@ -1,16 +1,8 @@
-import { supabase } from '../lib/supabase'
+import { getPlantas } from '../lib/supabase'
 import ProductCard from '../components/ProductCard'
 
 export default async function Catalogo() {
-  const { data: plantas, error } = await supabase
-    .from('plantas')
-    .select('*')
-    .order('created_at', { ascending: true })
-
-  if (error) {
-    console.error(error)
-    return <p>Error cargando plantas</p>
-  }
+  const plantas = await getPlantas()
 
   return (
     <main className="max-w-5xl mx-auto px-6 py-12">

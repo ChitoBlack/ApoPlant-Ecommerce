@@ -8,13 +8,16 @@ export default function AdminLogin() {
   const [error, setError] = useState('')
   const router = useRouter()
 
+  const configuredPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD?.trim()
+
   function handleLogin(e) {
     e.preventDefault()
-    if (password === process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
+    if (password === configuredPassword) {
       localStorage.setItem('admin_auth', 'true')
       router.push('/admin')
     } else {
-      setError('Contraseña incorrecta')
+      const hint = configuredPassword ? '' : ' No hay una contraseña configurada aún.'
+      setError(`Contraseña incorrecta.${hint}`)
     }
   }
 

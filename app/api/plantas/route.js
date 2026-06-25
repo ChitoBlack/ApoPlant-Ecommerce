@@ -10,19 +10,17 @@ const supabase = supabaseUrl && supabaseKey
     })
   : null
 
-export async function PUT(request, { params }) {
+export async function POST(request) {
   try {
-    const { id } = await params
     const body = await request.json()
 
     if (!supabase) {
       return NextResponse.json(
-        { error: 'No hay configuración de Supabase para actualizar la planta.' },
+        { error: 'No hay configuración de Supabase para crear la planta.' },
         { status: 500 }
       )
     }
 
-    const normalizedId = Number.isNaN(Number(id)) ? id : Number(id)
     const payload = {
       nombre: body.nombre,
       precio: Number(body.precio),
@@ -33,37 +31,13 @@ export async function PUT(request, { params }) {
       stock: Number(body.stock),
     }
 
-    const { data, error } = await supabase.from('plantas').update(payload).eq('id', normalizedId).select().single()
+    const { data, error } = await supabase.from('plantas').insert([payload]).select().single()
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
     return NextResponse.json({ success: true, planta: data })
-  } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
-}
-
-export async function DELETE(request, { params }) {
-  try {
-    const { id } = await params
-
-    if (!supabase) {
-      return NextResponse.json(
-        { error: 'No hay configuración de Supabase para eliminar la planta.' },
-        { status: 500 }
-      )
-    }
-
-    const normalizedId = Number.isNaN(Number(id)) ? id : Number(id)
-    const { error } = await supabase.from('plantas').delete().eq('id', normalizedId)
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
-
-    return NextResponse.json({ success: true })
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }

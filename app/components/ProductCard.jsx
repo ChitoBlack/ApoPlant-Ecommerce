@@ -2,14 +2,17 @@
 
 import Link from 'next/link'
 import { useCarrito } from '../context/CarritoContext'
+import ImagenPlanta from './ImagenPlanta'
 
 export default function ProductCard({ planta }) {
   const { agregarAlCarrito } = useCarrito()
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-green-100 overflow-hidden hover:shadow-md transition">
-      <div className="bg-green-50 h-40 flex items-center justify-center text-7xl">
-        {planta.imagen}
+    <div className="group bg-white rounded-2xl shadow-sm border border-green-100 overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+      <div className="bg-green-50 h-40 flex items-center justify-center overflow-hidden">
+        <div className="h-full w-full transition-transform duration-300 ease-out group-hover:scale-110 group-hover:rotate-1">
+          <ImagenPlanta src={planta.imagen} alt={planta.nombre} className="h-full w-full" />
+        </div>
       </div>
       <div className="p-4">
         <div className="flex justify-between items-start mb-1">

@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { supabase } from '../../../lib/supabase'
 import Link from 'next/link'
+import ImagenPlanta from '../../../components/ImagenPlanta'
+import { supabase } from '../../../lib/supabase'
 
 export default function EditarPlanta() {
   const router = useRouter()
@@ -11,38 +12,56 @@ export default function EditarPlanta() {
   const id = params?.id
   const [loading, setLoading] = useState(false)
   const [loadingData, setLoadingData] = useState(true)
+  const selectedImageFileRef = useRef(null)
   const [form, setForm] = useState({
     nombre: '',
     precio: '',
     descripcion: '',
     cuidado: '',
-    imagen: '🌿',
+    imagen: '',
     categoria: 'interior',
     stock: '',
   })
 
   useEffect(() => {
     async function cargarPlanta() {
-      if (!id) return
-
-      const { data, error } = await supabase.from('plantas').select('*').eq('id', id).single()
-
-      if (error || !data) {
-        alert('No se pudo cargar la planta')
-        router.push('/admin')
+      if (!id) {
+        setLoadingData(false)
         return
       }
 
-      setForm({
-        nombre: data.nombre || '',
-        precio: data.precio ?? '',
-        descripcion: data.descripcion || '',
-        cuidado: data.cuidado || '',
-        imagen: data.imagen || '🌿',
-        categoria: data.categoria || 'interior',
-        stock: data.stock ?? '',
-      })
-      setLoadingData(false)
+      setLoadingData(true)
+
+      try {
+        let data = null
+        let error = null
+
+        if (supabase) {
+          const response = await supabase.from('plantas').select('*').eq('id', id).single()
+          data = response.data
+          error = response.error
+        }
+
+        if (error || !data) {
+          throw new Error(error?.message || 'No se encontró la planta')
+        }
+
+        setForm({
+          nombre: data.nombre || '',
+          precio: data.precio ?? '',
+          descripcion: data.descripcion || '',
+          cuidado: data.cuidado || '',
+          imagen: data.imagen || '',
+          categoria: data.categoria || 'interior',
+          stock: data.stock ?? '',
+        })
+      } catch (err) {
+        console.error(err)
+        alert('No se pudo cargar la planta')
+        router.push('/admin')
+      } finally {
+        setLoadingData(false)
+      }
     }
 
     cargarPlanta()
@@ -52,18 +71,51 @@ export default function EditarPlanta() {
     setForm({ ...form, [e.target.name]: e.target.value })
   }
 
+  function handleImageChange(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    selectedImageFileRef.current = file
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      setForm((prev) => ({ ...prev, imagen: reader.result }))
+    }
+    reader.readAsDataURL(file)
+  }
+
+  async function readFileAsDataUrl(file) {
+    return await new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onloadend = () => resolve(reader.result)
+      reader.onerror = () => reject(new Error('No se pudo leer la imagen'))
+      reader.readAsDataURL(file)
+    })
+  }
+
   async function handleSubmit(e) {
     e.preventDefault()
     setLoading(true)
 
-    const { error } = await supabase.from('plantas').update({
-      ...form,
-      precio: Number(form.precio),
-      stock: Number(form.stock),
-    }).eq('id', id)
+    let imagenValue = form.imagen
+    if (selectedImageFileRef.current) {
+      imagenValue = await readFileAsDataUrl(selectedImageFileRef.current)
+    }
 
-    if (error) {
-      alert('Error al guardar: ' + error.message)
+    const response = await fetch(`/api/plantas/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...form,
+        imagen: imagenValue,
+        precio: Number(form.precio),
+        stock: Number(form.stock),
+      }),
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      alert('Error al guardar: ' + (data.error || 'No se pudo guardar la planta'))
     } else {
       router.push('/admin')
     }
@@ -109,9 +161,14 @@ export default function EditarPlanta() {
 
         <div className="grid grid-cols-3 gap-4">
           <div>
-            <label className="text-sm text-gray-500 mb-1 block">Emoji</label>
-            <input name="imagen" value={form.imagen} onChange={handleChange}
-              className="w-full border border-green-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-400"/>
+            <label className="text-sm text-gray-500 mb-1 block">Foto de la planta</label>
+            <input type="file" accept="image/*" onChange={handleImageChange}
+              className="w-full border border-green-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-400 bg-white"/>
+            {form.imagen && (
+              <div className="mt-3 h-24 w-24 rounded-xl overflow-hidden border border-green-100 bg-green-50">
+                <ImagenPlanta src={form.imagen} alt={form.nombre || 'Previsualización'} className="h-full w-full" />
+              </div>
+            )}
           </div>
           <div>
             <label className="text-sm text-gray-500 mb-1 block">Categoría</label>

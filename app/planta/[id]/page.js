@@ -2,6 +2,7 @@ import { getPlantaById } from '../../lib/supabase'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import BotonCarrito from '../../components/BotonCarrito'
+import ImagenPlanta from '../../components/ImagenPlanta'
 
 export default async function DetallePlanta({ params }) {
   const { id } = await params
@@ -16,8 +17,8 @@ export default async function DetallePlanta({ params }) {
       </Link>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mt-4">
-        <div className="bg-green-50 rounded-3xl flex items-center justify-center h-80 text-9xl">
-          {planta.imagen}
+        <div className="bg-green-50 rounded-3xl flex items-center justify-center h-80 overflow-hidden">
+          <ImagenPlanta src={planta.imagen} alt={planta.nombre} className="h-full w-full" />
         </div>
 
         <div className="flex flex-col justify-center">

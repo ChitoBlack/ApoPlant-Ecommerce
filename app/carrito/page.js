@@ -5,6 +5,7 @@ import { useCarrito } from '../context/CarritoContext'
 import Link from 'next/link'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import ImagenPlanta from '../components/ImagenPlanta'
 
 export default function Carrito() {
   const { carrito, eliminarDelCarrito, cambiarCantidad, total } = useCarrito()
@@ -52,8 +53,8 @@ export default function Carrito() {
         <div className="md:col-span-2 flex flex-col gap-4">
           {carrito.map((item) => (
             <div key={item.id} className="bg-white border border-green-100 rounded-2xl p-4 flex items-center gap-4 shadow-sm">
-              <div className="bg-green-50 rounded-xl w-16 h-16 flex items-center justify-center text-4xl shrink-0">
-                {item.imagen}
+              <div className="bg-green-50 rounded-xl w-16 h-16 overflow-hidden shrink-0">
+                <ImagenPlanta src={item.imagen} alt={item.nombre} className="h-full w-full" />
               </div>
               <div className="flex-1">
                 <h3 className="font-bold text-green-900">{item.nombre}</h3>

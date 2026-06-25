@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '../lib/supabase'
 import { plantas as datosPlantas } from '../data/plantas'
 import Link from 'next/link'
+import ImagenPlanta from '../components/ImagenPlanta'
 
 export default function Admin() {
   const [plantas, setPlantas] = useState([])
@@ -88,8 +89,8 @@ export default function Admin() {
             key={planta.id}
             className="bg-white border border-green-100 rounded-2xl p-4 flex items-center gap-4 shadow-sm"
           >
-            <div className="text-4xl w-14 h-14 bg-green-50 rounded-xl flex items-center justify-center shrink-0">
-              {planta.imagen}
+            <div className="w-14 h-14 bg-green-50 rounded-xl overflow-hidden shrink-0">
+              <ImagenPlanta src={planta.imagen} alt={planta.nombre} className="h-full w-full" />
             </div>
             <div className="flex-1">
               <h3 className="font-bold text-green-900">{planta.nombre}</h3>

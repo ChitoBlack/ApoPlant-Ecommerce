@@ -3,12 +3,28 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import BotonCarrito from '../../components/BotonCarrito'
 import ImagenPlanta from '../../components/ImagenPlanta'
+import VisorMonstera3D from '../../components/VisorMonstera3D'
+import { getPlantCareLabel } from '../../lib/plantas-care'
 
 export default async function DetallePlanta({ params }) {
   const { id } = await params
   const planta = await getPlantaById(id)
 
   if (!planta) return notFound()
+
+  const cuidados = [
+    { label: 'Luz', value: getPlantCareLabel('luz', planta.luz) },
+    { label: 'Riego', value: getPlantCareLabel('riego', planta.riego) },
+    { label: 'Dificultad', value: getPlantCareLabel('dificultad', planta.dificultad) },
+    {
+      label: 'Mascotas',
+      value: typeof planta.apta_mascotas === 'boolean'
+        ? planta.apta_mascotas
+          ? 'Apta para mascotas'
+          : 'No apta para mascotas'
+        : '',
+    },
+  ].filter((detalle) => detalle.value)
 
   return (
     <main className="max-w-4xl mx-auto px-6 py-12">
@@ -18,7 +34,11 @@ export default async function DetallePlanta({ params }) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mt-4">
         <div className="bg-green-50 rounded-3xl flex items-center justify-center h-80 overflow-hidden">
-          <ImagenPlanta src={planta.imagen} alt={planta.nombre} className="h-full w-full" />
+          {planta.nombre?.toLowerCase().includes('monstera') ? (
+            <VisorMonstera3D nombre={planta.nombre} />
+          ) : (
+            <ImagenPlanta src={planta.imagen} alt={planta.nombre} className="h-full w-full" />
+          )}
         </div>
 
         <div className="flex flex-col justify-center">
@@ -32,6 +52,17 @@ export default async function DetallePlanta({ params }) {
             <p className="text-sm font-semibold text-green-800 mb-1">🌿 Cuidados</p>
             <p className="text-sm text-green-700">{planta.cuidado}</p>
           </div>
+
+          {cuidados.length > 0 && (
+            <dl className="mb-6 grid grid-cols-2 gap-3">
+              {cuidados.map((detalle) => (
+                <div key={detalle.label} className="rounded-xl border border-green-100 bg-white p-3">
+                  <dt className="text-xs text-gray-500">{detalle.label}</dt>
+                  <dd className="mt-1 text-sm font-semibold text-green-900">{detalle.value}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
 
           <p className="text-sm text-gray-400 mb-4">
             Stock disponible: <span className="text-green-700 font-semibold">{planta.stock} unidades</span>

@@ -24,3 +24,12 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+.catalogo-carrusel {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.catalogo-carrusel::-webkit-scrollbar {
+  display: none;
+}

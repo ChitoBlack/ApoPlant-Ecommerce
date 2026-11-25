@@ -1,19 +1,20 @@
-import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-const supabase = supabaseUrl && supabaseKey
-  ? createClient(supabaseUrl, supabaseKey, {
-      auth: { persistSession: false },
-    })
-  : null
+import { hasAdminSession } from '../../lib/admin-auth'
+import { validatePlantaPayload } from '../../lib/plantas-validation'
+import { createSupabaseServerClient, createSupabaseServiceClient } from '../../lib/supabase-server'
 
 export async function POST(request) {
   try {
-    const body = await request.json()
+    if (!hasAdminSession(request)) {
+      return NextResponse.json({ error: 'Debes iniciar sesión como administrador.' }, { status: 401 })
+    }
 
+    const validation = validatePlantaPayload(await request.json())
+    if (validation.error) {
+      return NextResponse.json({ error: validation.error }, { status: 400 })
+    }
+
+    const supabase = createSupabaseServiceClient()
     if (!supabase) {
       return NextResponse.json(
         { error: 'No hay configuración de Supabase para crear la planta.' },
@@ -21,24 +22,41 @@ export async function POST(request) {
       )
     }
 
-    const payload = {
-      nombre: body.nombre,
-      precio: Number(body.precio),
-      descripcion: body.descripcion,
-      cuidado: body.cuidado,
-      imagen: body.imagen || '',
-      categoria: body.categoria || 'interior',
-      stock: Number(body.stock),
-    }
-
-    const { data, error } = await supabase.from('plantas').insert([payload]).select().single()
+    const { data, error } = await supabase
+      .from('plantas')
+      .insert([validation.payload])
+      .select()
+      .single()
 
     if (error) {
+      console.error('Error creando planta en Supabase:', error)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
     return NextResponse.json({ success: true, planta: data })
   } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    console.error('Error procesando creación de planta:', error)
+    return NextResponse.json({ error: 'No se pudo crear la planta.' }, { status: 500 })
+  }
+}
+
+export async function GET() {
+  try {
+    const supabase = createSupabaseServerClient()
+    if (!supabase) {
+      return NextResponse.json({ error: 'No hay configuración de Supabase.' }, { status: 500 })
+    }
+
+    const { data, error } = await supabase.from('plantas').select('*').order('created_at', { ascending: true })
+
+    if (error) {
+      console.error('Error cargando plantas desde Supabase:', error)
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    return NextResponse.json({ plantas: data })
+  } catch (error) {
+    console.error('Error procesando consulta de plantas:', error)
+    return NextResponse.json({ error: 'No se pudieron cargar las plantas.' }, { status: 500 })
   }
 }

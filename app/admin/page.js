@@ -1,36 +1,49 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '../lib/supabase'
-import { plantas as datosPlantas } from '../data/plantas'
 import Link from 'next/link'
 import ImagenPlanta from '../components/ImagenPlanta'
 
 export default function Admin() {
   const [plantas, setPlantas] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const router = useRouter()
 
-  useEffect(() => {
-    if (localStorage.getItem('admin_auth') !== 'true') {
-      router.push('/admin/login')
-      return
+  const cargarPlantas = useCallback(async () => {
+    setError('')
+    try {
+      const res = await fetch('/api/plantas')
+      const json = await res.json()
+      if (!res.ok) {
+        throw new Error(json.error || 'No se pudieron cargar las plantas.')
+      }
+
+      setPlantas(json.plantas || [])
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
     }
-    cargarPlantas()
   }, [])
 
-  async function cargarPlantas() {
-    if (supabase) {
-      const { data } = await supabase.from('plantas').select('*').order('created_at')
-      setPlantas(data || [])
-      setLoading(false)
-      return
+  useEffect(() => {
+    let active = true
+    fetch('/api/admin/login')
+      .then(async (response) => {
+        const data = await response.json()
+        if (!response.ok || !data.authenticated) {
+          router.replace('/admin/login')
+          return
+        }
+        if (active) cargarPlantas()
+      })
+      .catch(() => router.replace('/admin/login'))
+    return () => {
+      active = false
     }
-
-    setPlantas(datosPlantas)
-    setLoading(false)
-  }
+  }, [router, cargarPlantas])
 
   async function eliminarPlanta(id) {
     if (!confirm('¿Seguro que quieres eliminar esta planta?')) return
@@ -53,9 +66,12 @@ export default function Admin() {
     }
   }
 
-  function cerrarSesion() {
-    localStorage.removeItem('admin_auth')
-    router.push('/admin/login')
+  async function cerrarSesion() {
+    try {
+      await fetch('/api/admin/login', { method: 'DELETE' })
+    } finally {
+      router.replace('/admin/login')
+    }
   }
 
   if (loading) return <p className="p-8 text-green-700">Cargando...</p>
@@ -68,6 +84,12 @@ export default function Admin() {
           <p className="text-gray-500">{plantas.length} plantas en el catálogo</p>
         </div>
         <div className="flex gap-3">
+          <Link
+            href="/admin/pedidos"
+            className="border border-green-200 px-5 py-2 rounded-full text-green-700 hover:bg-green-50 transition"
+          >
+            Pedidos
+          </Link>
           <Link
             href="/admin/nueva-planta"
             className="bg-green-700 text-white px-5 py-2 rounded-full font-semibold hover:bg-green-800 transition"
@@ -84,6 +106,14 @@ export default function Admin() {
       </div>
 
       <div className="flex flex-col gap-4">
+        {error && (
+          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-700">
+            {error}
+            <button type="button" onClick={cargarPlantas} className="ml-3 font-semibold underline">
+              Reintentar
+            </button>
+          </div>
+        )}
         {plantas.map((planta) => (
           <div
             key={planta.id}

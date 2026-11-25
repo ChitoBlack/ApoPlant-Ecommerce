@@ -29,9 +29,8 @@ export default function AdminLogin() {
         return
       }
 
-      localStorage.setItem('admin_auth', 'true')
       router.push('/admin')
-    } catch (err) {
+    } catch {
       setError('No se pudo validar la contraseña')
     } finally {
       setLoading(false)

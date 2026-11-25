@@ -20,6 +20,7 @@ export async function getPlantas() {
     }
 
     console.error('Error cargando plantas desde Supabase:', error)
+    return []
   }
 
   return datosPlantas
@@ -27,17 +28,21 @@ export async function getPlantas() {
 
 export async function getPlantaById(id) {
   if (supabase) {
+    const numericId = Number(id)
+    const filterValue = Number.isNaN(numericId) ? id : numericId
     const { data, error } = await supabase
       .from('plantas')
       .select('*')
-      .eq('id', id)
-      .single()
-
+      .eq('id', filterValue)
+      .maybeSingle()
     if (!error && data) {
       return data
     }
 
-    console.error('Error cargando planta desde Supabase:', error)
+    if (error) {
+      console.error('Error cargando planta desde Supabase:', error)
+    }
+    return null
   }
 
   return datosPlantas.find((planta) => String(planta.id) === String(id)) ?? null

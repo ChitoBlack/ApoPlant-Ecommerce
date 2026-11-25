@@ -31,9 +31,10 @@ export default function BotonCarrito({ planta }) {
     <button
       type="button"
       onClick={handleClick}
-      className="bg-green-700 text-white px-6 py-3 rounded-full font-semibold hover:bg-green-800 transition"
+      disabled={Number(planta.stock) <= 0}
+      className="bg-green-700 text-white px-6 py-3 rounded-full font-semibold hover:bg-green-800 transition disabled:cursor-not-allowed disabled:opacity-50"
     >
-      {confirmado ? '✓ Añadido' : '🛒 Agregar al carrito'}
+      {Number(planta.stock) <= 0 ? 'Agotado' : confirmado ? '✓ Añadido' : '🛒 Agregar al carrito'}
     </button>
   )
 }

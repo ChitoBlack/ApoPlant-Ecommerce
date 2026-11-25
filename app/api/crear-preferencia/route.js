@@ -51,7 +51,13 @@ export async function POST(request) {
     const authHeader = request.headers.get('authorization') || ''
     const accessToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : ''
     const supabase = createSupabaseServiceClient()
-    if (!supabase || !accessToken) {
+    if (!supabase) {
+      return NextResponse.json(
+        { error: 'Falta configurar Supabase para procesar pagos en el servidor.' },
+        { status: 503 }
+      )
+    }
+    if (!accessToken) {
       return NextResponse.json({ error: 'Inicia sesión para continuar con la compra.' }, { status: 401 })
     }
 

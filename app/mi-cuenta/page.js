@@ -7,9 +7,44 @@ import ImagenPlanta from '../components/ImagenPlanta'
 import CustomerReviewForm from '../components/CustomerReviewForm'
 import { supabase } from '../lib/supabase'
 
+const paymentLabels = {
+  pending: 'Pendiente',
+  approved: 'Aprobado',
+  rejected: 'Rechazado',
+  cancelled: 'Cancelado',
+  refunded: 'Reembolsado',
+}
+
+const fulfillmentLabels = {
+  pending: 'Pendiente',
+  preparing: 'Preparando',
+  shipped: 'Enviado',
+  delivered: 'Entregado',
+  cancelled: 'Cancelado',
+}
+
+const paymentStatusStyles = {
+  pending: 'bg-amber-50 text-amber-800 ring-amber-200',
+  approved: 'bg-green-100 text-green-800 ring-green-200',
+  rejected: 'bg-red-50 text-red-700 ring-red-200',
+  cancelled: 'bg-gray-100 text-gray-700 ring-gray-200',
+  refunded: 'bg-blue-50 text-blue-700 ring-blue-200',
+}
+
+const fulfillmentStatusStyles = {
+  pending: 'bg-gray-100 text-gray-700 ring-gray-200',
+  preparing: 'bg-amber-50 text-amber-800 ring-amber-200',
+  shipped: 'bg-blue-50 text-blue-700 ring-blue-200',
+  delivered: 'bg-green-100 text-green-800 ring-green-200',
+  cancelled: 'bg-red-50 text-red-700 ring-red-200',
+}
+
 export default function MiCuentaPage() {
   const [session, setSession] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [pedidos, setPedidos] = useState([])
+  const [pedidosLoading, setPedidosLoading] = useState(false)
+  const [pedidosError, setPedidosError] = useState('')
   const [favoritos, setFavoritos] = useState([])
   const [favoritosLoading, setFavoritosLoading] = useState(false)
   const [favoritosError, setFavoritosError] = useState('')
@@ -42,6 +77,46 @@ export default function MiCuentaPage() {
       authListener?.subscription?.unsubscribe?.()
     }
   }, [])
+
+  useEffect(() => {
+    let isMounted = true
+
+    async function loadPedidos() {
+      if (!session?.access_token) {
+        setPedidos([])
+        setPedidosLoading(false)
+        setPedidosError('')
+        return
+      }
+
+      setPedidosLoading(true)
+      setPedidosError('')
+
+      try {
+        const response = await fetch('/api/mi-cuenta/pedidos', {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+          cache: 'no-store',
+        })
+        const result = await response.json()
+
+        if (!isMounted) return
+        if (!response.ok) throw new Error(result.error || 'No pudimos cargar tus pedidos.')
+        setPedidos(Array.isArray(result.pedidos) ? result.pedidos : [])
+      } catch (error) {
+        if (isMounted) {
+          console.error('Error cargando pedidos del perfil:', error)
+          setPedidosError(error.message || 'No pudimos cargar tus pedidos.')
+        }
+      } finally {
+        if (isMounted) setPedidosLoading(false)
+      }
+    }
+
+    loadPedidos()
+    return () => {
+      isMounted = false
+    }
+  }, [session])
 
   useEffect(() => {
     let isMounted = true
@@ -185,6 +260,98 @@ export default function MiCuentaPage() {
             <p className="mt-2 text-lg text-green-900">Sesión activa</p>
           </div>
         </div>
+
+        <details className="mt-8 overflow-hidden rounded-3xl border border-green-200 bg-white shadow-sm">
+          <summary className="cursor-pointer bg-green-800 px-6 py-5 text-white transition-colors hover:bg-green-900">
+            <span className="ml-2 inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/20 bg-white/10 text-2xl">
+              🌿
+            </span>
+            <span className="ml-3 inline-block align-middle">
+              <span className="block text-xl font-bold">Mis compras</span>
+              <span className="mt-1 block text-sm text-green-100">
+                Consulta tus pedidos, productos y estados de envío.
+              </span>
+            </span>
+          </summary>
+
+          <div className="bg-gradient-to-b from-green-50/70 to-white px-4 py-5 sm:px-6">
+            {pedidosLoading ? (
+              <p className="py-3 text-sm text-green-700">Cargando tus pedidos...</p>
+            ) : pedidosError ? (
+              <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                {pedidosError}
+              </p>
+            ) : pedidos.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-green-200 bg-white p-5 text-sm text-gray-600">
+                Aún no tienes compras registradas.
+                <Link href="/catalogo" className="ml-1 font-semibold text-green-700 hover:underline">
+                  Explorar catálogo
+                </Link>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {pedidos.map((pedido) => {
+                  const items = Array.isArray(pedido.items) ? pedido.items : []
+                  const shipping = pedido.shipping_address && typeof pedido.shipping_address === 'object'
+                    ? pedido.shipping_address
+                    : {}
+
+                  return (
+                    <details key={pedido.id} className="overflow-hidden rounded-2xl border border-green-200 bg-white shadow-sm transition-shadow hover:shadow-md">
+                      <summary className="flex cursor-pointer flex-wrap items-center justify-between gap-4 bg-white p-5 transition-colors hover:bg-green-50">
+                        <div>
+                          <h3 className="font-bold text-green-900">Pedido {pedido.id.slice(0, 8)}</h3>
+                          <p className="mt-1 text-sm text-gray-500">
+                            {new Date(pedido.created_at).toLocaleString('es-CL')}
+                          </p>
+                          <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold">
+                            <span className={`rounded-full px-3 py-1 ring-1 ${paymentStatusStyles[pedido.payment_status] || 'bg-gray-100 text-gray-700 ring-gray-200'}`}>
+                              Pago: {paymentLabels[pedido.payment_status] || pedido.payment_status}
+                            </span>
+                            <span className={`rounded-full px-3 py-1 ring-1 ${fulfillmentStatusStyles[pedido.fulfillment_status] || 'bg-gray-100 text-gray-700 ring-gray-200'}`}>
+                              Envío: {fulfillmentLabels[pedido.fulfillment_status] || pedido.fulfillment_status}
+                            </span>
+                          </div>
+                        </div>
+                        <p className="text-lg font-bold text-green-800">
+                          ${Number(pedido.total_amount).toLocaleString('es-CL')} {pedido.currency}
+                        </p>
+                      </summary>
+
+                      <div className="border-t border-green-100 bg-green-50/60 px-5 pb-5 pt-4">
+                        <h4 className="text-sm font-bold text-green-900">Detalle de la compra</h4>
+                        {items.length > 0 ? (
+                          <ul className="mt-2 divide-y divide-green-100">
+                            {items.map((item, index) => (
+                              <li key={`${pedido.id}-${item.id || index}`} className="flex justify-between gap-4 py-3 text-sm">
+                                <span className="text-gray-700">{item.nombre} × {item.cantidad}</span>
+                                <span className="shrink-0 font-semibold text-green-900">
+                                  ${(Number(item.precio) * Number(item.cantidad)).toLocaleString('es-CL')}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="mt-2 text-sm text-gray-500">No hay productos detallados en este pedido.</p>
+                        )}
+
+                        <div className="mt-3 rounded-xl border border-green-100 bg-white p-4 text-sm text-gray-600">
+                          <h4 className="font-bold text-green-900">Datos de envío</h4>
+                          <p className="mt-1">
+                            {shipping.recipient}, {shipping.phone}
+                          </p>
+                          <p>
+                            {shipping.address}, {shipping.commune}, {shipping.region}
+                          </p>
+                        </div>
+                      </div>
+                    </details>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        </details>
 
         <div className="mt-8 rounded-2xl border border-green-100 bg-white p-6">
           <div className="flex items-center justify-between gap-3">

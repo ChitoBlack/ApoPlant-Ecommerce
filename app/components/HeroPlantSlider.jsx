@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import VisorMonstera3D from './VisorMonstera3D'
 
@@ -25,6 +25,36 @@ const plants = [
 
 export default function HeroPlantSlider() {
   const [activePlant, setActivePlant] = useState(0)
+
+  useEffect(() => {
+    const preloadLinks = []
+    const preloadModels = () => {
+      plants.slice(1).forEach((plant) => {
+        const link = document.createElement('link')
+        link.rel = 'prefetch'
+        link.as = 'fetch'
+        link.href = plant.model
+        link.fetchPriority = 'low'
+        document.head.appendChild(link)
+        preloadLinks.push(link)
+      })
+    }
+    const removePreloadLinks = () => preloadLinks.forEach((link) => link.remove())
+
+    if ('requestIdleCallback' in window) {
+      const idleId = window.requestIdleCallback(preloadModels, { timeout: 1500 })
+      return () => {
+        window.cancelIdleCallback(idleId)
+        removePreloadLinks()
+      }
+    }
+
+    const timeoutId = window.setTimeout(preloadModels, 700)
+    return () => {
+      window.clearTimeout(timeoutId)
+      removePreloadLinks()
+    }
+  }, [])
 
   const showPrevious = () => {
     setActivePlant((current) => (current - 1 + plants.length) % plants.length)

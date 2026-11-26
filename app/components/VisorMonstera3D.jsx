@@ -185,7 +185,7 @@ export default function VisorMonstera3D({
         aria-label={`Modelo 3D de ${nombre}`}
       />
 
-      {loading && (
+      {loading && !decorativa && (
         <div className={`absolute inset-0 z-10 grid place-items-center text-sm text-green-800 ${decorativa ? 'bg-green-50/40' : 'bg-green-50/80'}`}>
           <span className="rounded-full bg-white/90 px-3 py-1.5 shadow-sm">
             Cargando modelo 3D… {progress > 0 ? `${progress}%` : ''}

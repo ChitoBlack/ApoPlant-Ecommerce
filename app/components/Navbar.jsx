@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { useCarrito } from '../context/CarritoContext'
 import AuthStatus from './AuthStatus'
@@ -11,9 +12,11 @@ export default function Navbar() {
     <nav className="bg-green-800 text-white p-4 flex justify-between items-center">
       <Link href="/" className="flex items-center gap-2 text-xl font-bold">
         <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/40 bg-white/15 shadow-lg backdrop-blur-sm">
-          <img
+          <Image
             src="/img/apoplantlogo.png"
             alt="ApoPlant"
+            width={28}
+            height={28}
             className="h-7 w-7 rounded-full object-cover"
           />
         </div>
